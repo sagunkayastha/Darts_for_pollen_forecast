@@ -1,1 +1,6 @@
 new_data/*
+scalers/*
+models/*
+*.save
+*.tar
+__pycache__/

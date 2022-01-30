@@ -13,8 +13,8 @@ from darts.datasets import AirPassengersDataset, SunspotsDataset, EnergyDataset
 from sklearn.preprocessing import MinMaxScaler
 
 import joblib
-from data_prep import prep_dataframe
-from filling import det_regression
+from data_prep import prep_dataframe, filling_cleaning, test_filling_cleaning
+
 
 category = 'POL'
 df1 = prep_dataframe('new_data/2020', category)
@@ -22,35 +22,7 @@ df2 = prep_dataframe('new_data/2021', category)
 
 dfx = pd.concat([df1, df2])
 
-gps = dfx.groupby(['DeviceId']).size()
-lengths = pd.DataFrame(gps, columns=['Len']).sort_values(
-        by='Len', ascending=False)
-
-# for did in lengths.index[1]:
-
-did = lengths.index[1]
-
-df = dfx[dfx.DeviceId == did].sort_values(
-                by=['Latitude', 'Longitude', 'OrdinalDay', 'HourOfDay']
-                ).reset_index(drop=True)
-
-df = df[['ds', 'ActualPPM3', 'SolarIrradiance',
-        'humi', 'pop12', 'qpf', 'temp', 'wspd']]
-df['ds'] = df['ds'].apply(lambda x: x.split(' ')[0])
-cols = ['ActualPPM3', 'SolarIrradiance',
-        'humi', 'pop12', 'qpf', 'temp', 'wspd']
-df[cols] = df[cols].apply(pd.to_numeric)
-gps = df.groupby(['ds']).mean()
-
-idx = pd.date_range('01-01-2020', '12-31-2021')
-gps.index = pd.DatetimeIndex(gps.index)
-
-gps = gps.reindex(idx, fill_value=np.NaN)
-gps['time'] = pd.to_datetime(gps.index)
-df_avg = gps.reset_index(drop=True)
-
-df_avg_filled, d_r = det_regression(df_avg[cols])
-df_avg_filled['time'] = pd.to_datetime(gps.index)
+df_avg_filled = filling_cleaning(dfx)
 
 scaler = MinMaxScaler()
 df_avg_filled[['ActualPPM3', 'SolarIrradiance', 'humi',
@@ -59,7 +31,7 @@ df_avg_filled[['ActualPPM3', 'SolarIrradiance', 'humi',
                 'pop12', 'qpf', 'temp', 'wspd']])
 
 # save_scaler
-scaler_filename = "scaler.save"
+scaler_filename = "scalers/scaler.save"
 joblib.dump(scaler, scaler_filename)
 
 x_df = df_avg_filled[['ActualPPM3', 'time']]
@@ -75,5 +47,5 @@ Rnn_Model.fit(x,
               epochs=100,
               verbose=True)
 
-Rnn_Model.save_model('model.pth.tar')
+Rnn_Model.save_model('models/model.pth.tar')
 

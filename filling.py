@@ -36,7 +36,7 @@ def det_regression(df):
 
             predict_ = poly.fit_transform(df[parameters])[df[feature].isnull()]
 
-            print(parameters)
+            # print(parameters)
 
             model = linear_model.LinearRegression()
             model.fit(X = X_, y = y)
